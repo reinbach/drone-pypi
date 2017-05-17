@@ -3,6 +3,14 @@ Drone PyPi Plugin
 
 Basic pypi plugin docker container that works with `Drone <https://github.com/drone/drone>`_.
 
+Build
+-----
+
+.. code-block:: bash
+
+   $ docker build -t reinbach/drone-pypi .
+   $ docker push reinbach/drone-pypi
+
 
 Usage
 -----
