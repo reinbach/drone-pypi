@@ -8,7 +8,15 @@ Build
 
 .. code-block:: bash
 
-   $ docker build -t reinbach/drone-pypi .
+   $ go build
+
+
+Docker
+------
+
+.. code-block:: bash
+
+   $ docker build --rm -t reinbach/drone-pypi .
    $ docker push reinbach/drone-pypi
 
 
@@ -23,4 +31,6 @@ Usage
         repository: https://pypi.python.org/pypi/
         username: <username>
         password: <password>
-        distributions: sdist,bdist_wheel
+        distributions:
+          - sdist
+          - bdist_wheel

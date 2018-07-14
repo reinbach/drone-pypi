@@ -1,86 +1,77 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"os"
-	"os/exec"
-	"path"
-	"strings"
+
+	"github.com/urfave/cli"
 )
 
-func CreateConfig() error {
-	f, err := os.Create(path.Join(os.Getenv("HOME"), ".pypirc"))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	buf := bufio.NewWriter(f)
-	err = WriteConfig(buf)
-	if err != nil {
-		return err
-	}
-	buf.Flush()
-	return nil
-}
+var (
+	version = "0.0.0"
+	build = "0"
+)
 
-func WriteConfig(w io.Writer) error {
-	repo := os.Getenv("PLUGIN_REPOSITORY")
-	if repo == "" {
-		repo = "https://pypi.python.org/pypi"
-	}
-	username := os.Getenv("PLUGIN_USERNAME")
-	password := os.Getenv("PLUGIN_PASSWORD")
-	_, err := io.WriteString(
-		w,
-		fmt.Sprintf(
-			`[distutils]
-index-servers =
-    pypi
-
-[pypi]
-repository: %s
-username: %s
-password: %s
-`,
-			repo,
-			username,
-			password,
-		),
-	)
-
-	return err
-}
-
-func UploadDist() error {
-	dists := os.Getenv("PLUGIN_DISTRIBUTIONS")
-	distributions := strings.Split(dists, ",")
-
-	args := []string{"setup.py"}
-	for i := range distributions {
-		args = append(args, distributions[i])
-	}
-	args = append(args, "upload")
-	args = append(args, "-r")
-	args = append(args, "pypi")
-
-	cmd := exec.Command("python", args...)
-	cmd.Dir = os.Getenv("DRONE_WORKSPACE")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	fmt.Println("$", strings.Join(cmd.Args, " "))
-	return cmd.Run()
-}
 
 func main() {
-	err := CreateConfig()
-	if err != nil {
+	app := cli.NewApp()
+	app.Name = "pypi plugin"
+	app.Usage = "pypi plugin"
+	app.Action = run
+	app.Version = fmt.Sprintf("%s+%s", version, build)
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name: "repo",
+			Usage: "pypi repo",
+			EnvVar: "PLUGIN_REPOSITORY, PYPI_REPO, PYPI_URL",
+			Value: "https://pypi.python.org/pypi/",
+		},
+		cli.StringFlag{
+			Name: "username",
+			Usage: "pypi username",
+			EnvVar: "PLUGIN_USERNAME, PYPI_USERNAME, PYPI_KEY",
+		},
+		cli.StringFlag{
+			Name: "password",
+			Usage: "pypi password",
+			EnvVar: "PLUGIN_PASSWORD, PYPI_PASSWORD, PYPI_SECRET",
+		},
+		cli.StringSliceFlag{
+			Name: "distributions",
+			Usage: "pypi distributions",
+			EnvVar: "PLUGIN_DISTRIBUTIONS, PYPI_DISTRIBUTIONS",
+		},
+		cli.StringFlag{
+			Name: "build.home",
+			Usage: "build home directory",
+			EnvVar: "HOME",
+		},
+		cli.StringFlag{
+			Name: "build.workspace",
+			Usage: "build workspace",
+			EnvVar: "DRONE_WORKSPACE",
+		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
-	err = UploadDist()
-	if err != nil {
-		log.Fatal(err)
+}
+
+func run(c *cli.Context) error {
+	plugin := Plugin{
+		Build: Build{
+			Workspace: c.String("build.workspace"),
+			Home: c.String("build.home"),
+		},
+		Config: Config{
+			Repo: c.String("repo"),
+			Username: c.String("username"),
+			Password: c.String("password"),
+			Distributions: c.StringSlice("distributions"),
+		},
 	}
+
+	return plugin.Exec()
 }
