@@ -1,4 +1,4 @@
 FROM python:2-alpine
-ADD pypi /bin/
+ADD drone-pypi /bin/
 RUN apk -Uuv add ca-certificates
-ENTRYPOINT /bin/pypi
+ENTRYPOINT /bin/drone-pypi
