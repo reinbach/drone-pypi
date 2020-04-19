@@ -11,32 +11,35 @@ import (
 )
 
 type (
+	// Build struct
 	Build struct {
-		Home string
+		Home      string
 		Workspace string
 	}
 
+	// Config struct
 	Config struct {
-		Repo string
-		Username string
-		Password string
+		Repo          string
+		Username      string
+		Password      string
 		Distributions []string
 	}
 
+	// Plugin struct
 	Plugin struct {
-		Build Build
+		Build  Build
 		Config Config
 	}
 )
 
-func (p Plugin) CreateConfig() error {
+func (p Plugin) createConfig() error {
 	f, err := os.Create(path.Join(p.Build.Home, ".pypirc"))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 	buf := bufio.NewWriter(f)
-	err = p.WriteConfig(buf)
+	err = p.writeConfig(buf)
 	if err != nil {
 		return err
 	}
@@ -44,7 +47,7 @@ func (p Plugin) CreateConfig() error {
 	return nil
 }
 
-func (p Plugin) WriteConfig(w io.Writer) error {
+func (p Plugin) writeConfig(w io.Writer) error {
 	_, err := io.WriteString(
 		w,
 		fmt.Sprintf(
@@ -66,7 +69,7 @@ password: %s
 	return err
 }
 
-func (p Plugin) UploadDist() error {
+func (p Plugin) uploadDist() error {
 	distributions := p.Config.Distributions
 
 	args := []string{"setup.py"}
@@ -85,15 +88,19 @@ func (p Plugin) UploadDist() error {
 	return cmd.Run()
 }
 
+// Exec execure plugin function
 func (p Plugin) Exec() error {
-	err := p.CreateConfig()
+	err := p.createConfig()
 	if err != nil {
 		fmt.Printf("Error: Failed to create .pypirc file. %s\n", err)
 		return err
 	}
-	err = p.UploadDist()
+	err = p.uploadDist()
 	if err != nil {
-		fmt.Printf("Error: Failed to create/upload distribution. %s\n", err)
+		fmt.Printf(
+			"Error: Failed to create/upload distribution. %s\n",
+			err,
+		)
 		return err
 	}
 
